@@ -5,20 +5,93 @@
 [sub_resource type="GDScript" id="GDScript_kpjcp"]
 script/source = "extends CharacterBody2D
 
+var history = []
+const HISTORY_MAX_LENGTH = 300
+
+var history_index = -1
+
 const maxSpeed := 300
 const accel := 375
-const friction := 300
+const friction := 500
 const gravity := 300
 const jumpForce := 150
 const fallMultiplier := 2.5
 var input = Vector2.ZERO
+var current_scale = Vector2.ONE
+
+var is_recording = false
+
+func _ready():
+	set_process_input(true)
+	current_scale = $Sprite2D.scale
+
+func _input(event):
+	if event is InputEventKey and event.pressed:
+		if event.keycode == KEY_R:
+			is_recording = !is_recording
+			if is_recording:
+				history.clear()
+				history_index = -1
+				print(\"Recording started\")
+			else:
+				print(\"Recording stopped\")
+		elif event.keycode == KEY_SPACE:
+			history_index = -1
+			print(\"Live control regained\")
+	if event is InputEventMouseButton and event.pressed:
+		if event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			step_rewind()
+		elif event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			step_fast_forward()
+func apply_history_state(index: int):
+	var state = history[index]
+	position = state.position
+	velocity = state.velocity
+
+func step_rewind():
+	if history.size() == 0:
+		return
+	if history_index == -1:
+		history_index = history.size() - 1
+	else:
+		history_index = max(0, history_index - 1)
+	apply_history_state(history_index)
+
+func step_fast_forward():
+	if history.size() == 0 or history_index == -1:
+		return
+	history_index = min(history.size() - 1, history_index + 1)
+	apply_history_state(history_index)
+	
+func change_scale(amount: float):
+	var min_scale = 0.5
+	var max_scale = 2.0
+	var new_scale_value = clamp(current_scale.x + amount, min_scale, max_scale)
+	current_scale = Vector2(new_scale_value, new_scale_value)
+	scaleCharacter(current_scale, 0.1)
+
+func scaleCharacter(tscale: Vector2, duration: float):
+	var tween = create_tween()
+	tween.tween_property($Sprite2D, \"scale\", tscale, duration)
+
 func _physics_process(delta):
-	playerMovement(delta)
+	if history_index == -1:
+		if is_recording:
+			history.append({
+				\"position\": position,
+				\"velocity\": velocity
+			})
+			if history.size() > HISTORY_MAX_LENGTH:
+				history.pop_front()
+		playerMovement(delta)
+		move_and_slide()
+	else:
+		velocity = Vector2.ZERO
 
 func getInput():
 	input.x = int(Input.is_action_pressed(\"ui_right\")) - int(Input.is_action_pressed(\"ui_left\"))
 	return input.normalized()
-	
+
 func playerMovement(delta):
 	if not is_on_floor():
 		if velocity.y > 0:
@@ -36,7 +109,6 @@ func playerMovement(delta):
 	else:
 		velocity.x += input.x * accel * delta
 		velocity.x = clamp(velocity.x, -maxSpeed, maxSpeed)
-	move_and_slide()
 "
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_e80uo"]
