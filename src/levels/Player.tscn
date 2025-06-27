@@ -1,0 +1,61 @@
+[gd_scene load_steps=4 format=3 uid="uid://kd88rjy0kg8j"]
+
+[ext_resource type="Texture2D" uid="uid://b4pegrn318rvo" path="res://src/temp_char.bmp" id="1_gga1i"]
+
+[sub_resource type="GDScript" id="GDScript_kpjcp"]
+script/source = "extends CharacterBody2D
+
+const maxSpeed := 300
+const accel := 375
+const friction := 300
+const gravity := 300
+const jumpForce := 150
+const fallMultiplier := 2.5
+var input = Vector2.ZERO
+func _physics_process(delta):
+	playerMovement(delta)
+
+func getInput():
+	input.x = int(Input.is_action_pressed(\"ui_right\")) - int(Input.is_action_pressed(\"ui_left\"))
+	return input.normalized()
+	
+func playerMovement(delta):
+	if not is_on_floor():
+		if velocity.y > 0:
+			velocity.y += gravity * fallMultiplier * delta
+		else:
+			velocity.y += gravity * delta
+	if Input.is_action_just_pressed(\"ui_up\") and is_on_floor():
+		velocity.y += -jumpForce
+	input = getInput()
+	if input.x == 0:
+		if abs(velocity.x) > friction * delta:
+			velocity.x -= sign(velocity.x) * friction * delta
+		else:
+			velocity.x = 0
+	else:
+		velocity.x += input.x * accel * delta
+		velocity.x = clamp(velocity.x, -maxSpeed, maxSpeed)
+	move_and_slide()
+"
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_e80uo"]
+
+[node name="Player" type="CharacterBody2D"]
+script = SubResource("GDScript_kpjcp")
+metadata/_edit_horizontal_guides_ = [-64.0]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CapsuleShape2D_e80uo")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+zoom = Vector2(2, 2)
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture_filter = 1
+position = Vector2(-5.96046e-07, -0.5)
+scale = Vector2(1.25, 1.6875)
+texture = ExtResource("1_gga1i")
+
+[connection signal="tree_entered" from="." to="." method="_on_tree_entered"]
+[connection signal="tree_exiting" from="." to="." method="_on_tree_exiting"]
