@@ -45,8 +45,10 @@ func _input(event):
 			step_fast_forward()
 func apply_history_state(index: int):
 	var state = history[index]
-	position = state.position
-	velocity = state.velocity
+	var tween1 = create_tween()
+	tween1.tween_property(self, \"position\", state.position,0.2)
+	tween1.tween_property(self, \"velocity\", state.velocity,0.2)
+
 
 func step_rewind():
 	if history.size() == 0:
