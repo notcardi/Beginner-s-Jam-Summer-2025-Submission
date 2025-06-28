@@ -1,6 +1,7 @@
-[gd_scene load_steps=4 format=3 uid="uid://kd88rjy0kg8j"]
+[gd_scene load_steps=15 format=3 uid="uid://kd88rjy0kg8j"]
 
-[ext_resource type="Texture2D" uid="uid://b4pegrn318rvo" path="res://src/temp_char.bmp" id="1_gga1i"]
+[ext_resource type="Shader" uid="uid://cld0uw78ay6ee" path="res://src/levels/Player.gdshader" id="1_toe0l"]
+[ext_resource type="Texture2D" uid="uid://dhginugqnsg8u" path="res://src/levels/pixilart-sprite.png" id="2_toe0l"]
 
 [sub_resource type="GDScript" id="GDScript_kpjcp"]
 script/source = "extends CharacterBody2D
@@ -8,22 +9,40 @@ script/source = "extends CharacterBody2D
 var history = []
 const HISTORY_MAX_LENGTH = 300
 
+@onready var emitter = $CollisionShape2D/SlowmoParticles
+@onready var emitter2 = $CollisionShape2D/SlowmoParticles2
+@onready var sprite = $AnimatedSprite2D
+
 var history_index = -1
 
-const maxSpeed := 300
-const accel := 375
-const friction := 500
-const gravity := 300
-const jumpForce := 150
-const fallMultiplier := 2.5
+var maxSpeed := 150
+const accel := 600
+const friction := 800
+const gravity := 900
+var jumpForce := 300
+const fallMultiplier := 2.0
+
 var input = Vector2.ZERO
 var current_scale = Vector2.ONE
-
+var timestop = false
 var is_recording = false
 
+func timestopped(isEnabled):
+	if isEnabled:
+		emitter.emitting = true
+		maxSpeed = 0
+		jumpForce = 0
+	else:
+		emitter.emitting = false
+		jumpForce = 300
+		maxSpeed = 150
+
 func _ready():
+	EventBus.timeStopEvent.connect(timestopped)
 	set_process_input(true)
-	current_scale = $Sprite2D.scale
+	current_scale = sprite.scale
+	emitter.emitting = false
+	emitter2.emitting = false
 
 func _input(event):
 	if event is InputEventKey and event.pressed:
@@ -32,26 +51,27 @@ func _input(event):
 			if is_recording:
 				history.clear()
 				history_index = -1
-				print(\"Recording started\")
+				emitter2.emitting = true
 			else:
-				print(\"Recording stopped\")
+				emitter2.emitting = false
 		elif event.keycode == KEY_SPACE:
 			history_index = -1
-			print(\"Live control regained\")
+			emitter.emitting = false
+		elif event.keycode == KEY_ENTER:
+			EventBus.timeStopEvent.emit(!timestop)
+			timestop = !timestop
 	if event is InputEventMouseButton and event.pressed:
 		if event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			if !emitter.emitting:
+				emitter.emitting = true
 			step_rewind()
 		elif event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			if !emitter.emitting:
+				emitter.emitting = true
 			step_fast_forward()
-func apply_history_state(index: int):
-	var state = history[index]
-	var tween1 = create_tween()
-	tween1.tween_property(self, \"position\", state.position,0.2)
-	tween1.tween_property(self, \"velocity\", state.velocity,0.2)
-
 
 func step_rewind():
-	if history.size() == 0:
+	if history.is_empty():
 		return
 	if history_index == -1:
 		history_index = history.size() - 1
@@ -60,11 +80,24 @@ func step_rewind():
 	apply_history_state(history_index)
 
 func step_fast_forward():
-	if history.size() == 0 or history_index == -1:
+	if history.is_empty() or history_index == -1:
 		return
 	history_index = min(history.size() - 1, history_index + 1)
 	apply_history_state(history_index)
-	
+
+func apply_history_state(index: int):
+	var state = history[index]
+	var tween1 = create_tween()
+	tween1.tween_property(self, \"position\", state.position, 0.2)
+	tween1.tween_property(self, \"velocity\", state.velocity, 0.2)
+	sprite.flip_h = state.direction
+
+func update_particle_direction():
+	if velocity.length() > 1:
+		var direction = -velocity.normalized()
+		emitter.direction = direction
+		emitter2.direction = direction
+
 func change_scale(amount: float):
 	var min_scale = 0.5
 	var max_scale = 2.0
@@ -77,11 +110,13 @@ func scaleCharacter(tscale: Vector2, duration: float):
 	tween.tween_property($Sprite2D, \"scale\", tscale, duration)
 
 func _physics_process(delta):
+	update_particle_direction()
 	if history_index == -1:
 		if is_recording:
 			history.append({
 				\"position\": position,
-				\"velocity\": velocity
+				\"velocity\": velocity,
+				\"direction\": sprite.flip_h
 			})
 			if history.size() > HISTORY_MAX_LENGTH:
 				history.pop_front()
@@ -100,8 +135,10 @@ func playerMovement(delta):
 			velocity.y += gravity * fallMultiplier * delta
 		else:
 			velocity.y += gravity * delta
+	else:
+		velocity.y = 0
 	if Input.is_action_just_pressed(\"ui_up\") and is_on_floor():
-		velocity.y += -jumpForce
+		velocity.y = -jumpForce
 	input = getInput()
 	if input.x == 0:
 		if abs(velocity.x) > friction * delta:
@@ -111,9 +148,104 @@ func playerMovement(delta):
 	else:
 		velocity.x += input.x * accel * delta
 		velocity.x = clamp(velocity.x, -maxSpeed, maxSpeed)
+		sprite.flip_h = input.x < 0
+	#if is_on_floor():
+		#if abs(velocity.x) > 5:
+			#sprite.play(\"walk\")
+		#else:
+			#sprite.play(\"idle\")
+	#else:
+		#sprite.play(\"jump\")
 "
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_e80uo"]
+
+[sub_resource type="Gradient" id="Gradient_toe0l"]
+colors = PackedColorArray(0, 0, 0.423529, 1, 1, 0, 1, 1)
+
+[sub_resource type="Gradient" id="Gradient_4hqxf"]
+interpolation_mode = 2
+colors = PackedColorArray(1, 0.756482, 0.792946, 1, 1, 0, 0, 1)
+
+[sub_resource type="GDScript" id="GDScript_4hqxf"]
+resource_name = "SetBoundaries"
+script/source = "extends Camera2D
+
+# Called when the node enters the scene tree for the first time.
+func _ready() -> void:
+	var level_root = get_parent().get_parent()  # Assuming Player is under MainLevel
+	var rightEdge = level_root.get_node(\"RightEdge\")
+	limit_right = rightEdge.global_position.x
+
+
+# Called every frame. 'delta' is the elapsed time since the previous frame.
+func _process(delta: float) -> void:
+	pass
+"
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_4hqxf"]
+shader = ExtResource("1_toe0l")
+
+[sub_resource type="GDScript" id="GDScript_toe0l"]
+script/source = "extends ColorRect
+
+	
+
+func on_timestop(isEnabled):
+	var my_shader := preload(\"res://src/levels/Player.gdshader\")
+	var shader_material := ShaderMaterial.new()
+	shader_material.shader = my_shader
+	if isEnabled:
+		self.material = shader_material
+	else:
+		self.material = null
+	
+
+func _on_tree_entered() -> void:
+	EventBus.timeStopEvent.connect(on_timestop)
+	self.material = null
+	self.color.a = 0.0
+
+
+func _on_tree_exiting() -> void:
+	pass # Replace with function body.
+"
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_4hqxf"]
+atlas = ExtResource("2_toe0l")
+region = Rect2(0, 0, 800, 800)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_hdch0"]
+atlas = ExtResource("2_toe0l")
+region = Rect2(800, 0, 800, 800)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_k6bo7"]
+atlas = ExtResource("2_toe0l")
+region = Rect2(1600, 0, 800, 800)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_li0ro"]
+atlas = ExtResource("2_toe0l")
+region = Rect2(2400, 0, 800, 800)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_viisw"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_4hqxf")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_hdch0")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_k6bo7")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_li0ro")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 5.0
+}]
 
 [node name="Player" type="CharacterBody2D"]
 script = SubResource("GDScript_kpjcp")
@@ -122,14 +254,55 @@ metadata/_edit_horizontal_guides_ = [-64.0]
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CapsuleShape2D_e80uo")
 
-[node name="Camera2D" type="Camera2D" parent="."]
-zoom = Vector2(2, 2)
-
-[node name="Sprite2D" type="Sprite2D" parent="."]
+[node name="SlowmoParticles" type="CPUParticles2D" parent="CollisionShape2D"]
 texture_filter = 1
-position = Vector2(-5.96046e-07, -0.5)
-scale = Vector2(1.25, 1.6875)
-texture = ExtResource("1_gga1i")
+amount = 60
+lifetime = 1.05
+randomness = 1.0
+emission_shape = 3
+emission_rect_extents = Vector2(5, 5)
+gravity = Vector2(-100, 0)
+scale_amount_min = 4.0
+scale_amount_max = 4.0
+color_ramp = SubResource("Gradient_toe0l")
+
+[node name="SlowmoParticles2" type="CPUParticles2D" parent="CollisionShape2D"]
+texture_filter = 1
+amount = 60
+lifetime = 1.05
+randomness = 1.0
+emission_shape = 3
+emission_rect_extents = Vector2(5, 5)
+gravity = Vector2(-100, 0)
+scale_amount_min = 4.0
+scale_amount_max = 4.0
+color_ramp = SubResource("Gradient_4hqxf")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+zoom = Vector2(3, 3)
+script = SubResource("GDScript_4hqxf")
+
+[node name="CanvasLayer" type="CanvasLayer" parent="Camera2D"]
+
+[node name="ColorRect" type="ColorRect" parent="Camera2D/CanvasLayer"]
+material = SubResource("ShaderMaterial_4hqxf")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = SubResource("GDScript_toe0l")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+texture_filter = 1
+position = Vector2(-1.42109e-14, 1)
+scale = Vector2(0.0275, 0.033125)
+sprite_frames = SubResource("SpriteFrames_viisw")
+animation = &"idle"
+autoplay = "idle"
+frame_progress = 0.383319
 
 [connection signal="tree_entered" from="." to="." method="_on_tree_entered"]
 [connection signal="tree_exiting" from="." to="." method="_on_tree_exiting"]
+[connection signal="tree_entered" from="Camera2D/CanvasLayer/ColorRect" to="Camera2D/CanvasLayer/ColorRect" method="_on_tree_entered"]
+[connection signal="tree_exiting" from="Camera2D/CanvasLayer/ColorRect" to="Camera2D/CanvasLayer/ColorRect" method="_on_tree_exiting"]
