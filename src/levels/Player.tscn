@@ -300,7 +300,7 @@ scale = Vector2(0.0275, 0.033125)
 sprite_frames = SubResource("SpriteFrames_viisw")
 animation = &"idle"
 autoplay = "idle"
-frame_progress = 0.383319
+frame_progress = 0.83824
 
 [connection signal="tree_entered" from="." to="." method="_on_tree_entered"]
 [connection signal="tree_exiting" from="." to="." method="_on_tree_exiting"]
