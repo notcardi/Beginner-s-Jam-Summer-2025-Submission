@@ -1,0 +1,42 @@
+[gd_scene load_steps=5 format=3 uid="uid://rugf5l3ahk7o"]
+
+[ext_resource type="Texture2D" uid="uid://c10g7hd4qpcaj" path="res://src/images/1 Backgrounds/2/Night/1.png" id="1_bt06s"]
+[ext_resource type="Texture2D" uid="uid://c4w7mncr64pgm" path="res://src/images/1 Backgrounds/2/Night/2.png" id="2_cjoif"]
+[ext_resource type="Texture2D" uid="uid://c2o81uimlto3a" path="res://src/images/1 Backgrounds/2/Night/3.png" id="3_8ij0t"]
+[ext_resource type="Texture2D" uid="uid://c1ykio32mexqk" path="res://src/images/1 Backgrounds/2/Night/5.png" id="4_pa3lb"]
+
+[node name="background_industrial" type="Node2D"]
+
+[node name="ParallaxBackground" type="ParallaxBackground" parent="."]
+
+[node name="Background" type="ParallaxLayer" parent="ParallaxBackground"]
+motion_mirroring = Vector2(576, 0)
+
+[node name="Sprite2D" type="Sprite2D" parent="ParallaxBackground/Background"]
+texture = ExtResource("1_bt06s")
+centered = false
+
+[node name="BuildingsOutline" type="ParallaxLayer" parent="ParallaxBackground"]
+motion_scale = Vector2(0.1, 1)
+motion_mirroring = Vector2(576, 0)
+
+[node name="Sprite2D" type="Sprite2D" parent="ParallaxBackground/BuildingsOutline"]
+texture = ExtResource("2_cjoif")
+centered = false
+
+[node name="BuildingsOutline2" type="ParallaxLayer" parent="ParallaxBackground"]
+motion_scale = Vector2(0.1, 1)
+motion_mirroring = Vector2(576, 0)
+
+[node name="Sprite2D" type="Sprite2D" parent="ParallaxBackground/BuildingsOutline2"]
+position = Vector2(0, -1)
+texture = ExtResource("3_8ij0t")
+centered = false
+
+[node name="BuildingsOutline4" type="ParallaxLayer" parent="ParallaxBackground"]
+motion_scale = Vector2(0.1, 1)
+motion_mirroring = Vector2(576, 0)
+
+[node name="Sprite2D" type="Sprite2D" parent="ParallaxBackground/BuildingsOutline4"]
+texture = ExtResource("4_pa3lb")
+centered = false

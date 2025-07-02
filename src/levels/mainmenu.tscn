@@ -1,0 +1,119 @@
+[gd_scene load_steps=7 format=3 uid="uid://c746g6x5o2fk4"]
+
+[ext_resource type="Texture2D" uid="uid://wvfcsdvl0vlv" path="res://src/parallax_demon_woods_pack/layers/parallax-demon-woods-bg.png" id="1_ctkgp"]
+[ext_resource type="Texture2D" uid="uid://chbiwlu0623ci" path="res://src/parallax_demon_woods_pack/layers/parallax-demon-woods-mid-trees.png" id="2_rp8ue"]
+[ext_resource type="Texture2D" uid="uid://gxivjhtlf6fr" path="res://src/parallax_demon_woods_pack/layers/parallax-demon-woods-far-trees.png" id="3_34dlg"]
+[ext_resource type="Texture2D" uid="uid://bvwg4plc5ul07" path="res://src/parallax_demon_woods_pack/layers/parallax-demon-woods-close-trees.png" id="4_dxg6d"]
+[ext_resource type="Script" uid="uid://c11v5clgpeaww" path="res://src/levels/button.gd" id="5_34dlg"]
+[ext_resource type="Texture2D" uid="uid://df7n2gundsuj3" path="res://src/images/fmod_real.png" id="5_dxg6d"]
+
+[node name="Control" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TextureRect" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("1_ctkgp")
+
+[node name="TextureRect4" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("2_rp8ue")
+
+[node name="TextureRect3" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("3_34dlg")
+
+[node name="TextureRect2" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("4_dxg6d")
+
+[node name="TextureRect5" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -150.0
+offset_top = -51.0
+grow_horizontal = 0
+grow_vertical = 0
+texture = ExtResource("5_dxg6d")
+expand_mode = 1
+
+[node name="Label" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -42.0
+offset_right = 42.0
+offset_bottom = 23.0
+grow_horizontal = 2
+text = "Innovation"
+
+[node name="Control" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_bottom = -50.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label2" type="Label" parent="Control"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -84.0
+offset_top = -23.0
+grow_horizontal = 0
+grow_vertical = 0
+text = "Made with <3 using"
+
+[node name="Button" type="Button" parent="Control"]
+texture_filter = 1
+texture_repeat = 3
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -93.0
+offset_top = -22.0
+offset_right = 94.0
+offset_bottom = 65.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "Start Game"
+script = ExtResource("5_34dlg")
+
+[connection signal="pressed" from="Control/Button" to="Control/Button" method="_on_pressed"]

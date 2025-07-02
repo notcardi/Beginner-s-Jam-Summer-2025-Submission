@@ -1,14 +1,15 @@
-[gd_scene load_steps=15 format=3 uid="uid://kd88rjy0kg8j"]
+[gd_scene load_steps=20 format=3 uid="uid://kd88rjy0kg8j"]
 
 [ext_resource type="Shader" uid="uid://cld0uw78ay6ee" path="res://src/levels/Player.gdshader" id="1_toe0l"]
 [ext_resource type="Texture2D" uid="uid://dhginugqnsg8u" path="res://src/levels/pixilart-sprite.png" id="2_toe0l"]
+[ext_resource type="Texture2D" uid="uid://b7svab3yu5kga" path="res://pixilart-sprite_50.png" id="3_4hqxf"]
 
 [sub_resource type="GDScript" id="GDScript_kpjcp"]
 script/source = "extends CharacterBody2D
 
 var history = []
 const HISTORY_MAX_LENGTH = 300
-
+var canmove = true
 @onready var emitter = $CollisionShape2D/SlowmoParticles
 @onready var emitter2 = $CollisionShape2D/SlowmoParticles2
 @onready var sprite = $AnimatedSprite2D
@@ -43,7 +44,6 @@ func _ready():
 	current_scale = sprite.scale
 	emitter.emitting = false
 	emitter2.emitting = false
-
 func _input(event):
 	if event is InputEventKey and event.pressed:
 		if event.keycode == KEY_R:
@@ -77,20 +77,23 @@ func step_rewind():
 		history_index = history.size() - 1
 	else:
 		history_index = max(0, history_index - 1)
-	apply_history_state(history_index)
+	apply_history_state(history_index, 2)
 
 func step_fast_forward():
 	if history.is_empty() or history_index == -1:
 		return
 	history_index = min(history.size() - 1, history_index + 1)
-	apply_history_state(history_index)
+	apply_history_state(history_index, 1)
 
-func apply_history_state(index: int):
+func apply_history_state(index: int, mode: int):
 	var state = history[index]
 	var tween1 = create_tween()
 	tween1.tween_property(self, \"position\", state.position, 0.2)
 	tween1.tween_property(self, \"velocity\", state.velocity, 0.2)
-	sprite.flip_h = state.direction
+	if mode == 1:
+		sprite.flip_h = state.direction
+	else:
+		sprite.flip_h = !state.direction
 
 func update_particle_direction():
 	if velocity.length() > 1:
@@ -130,6 +133,8 @@ func getInput():
 	return input.normalized()
 
 func playerMovement(delta):
+	if not canmove: 
+		return
 	if not is_on_floor():
 		if velocity.y > 0:
 			velocity.y += gravity * fallMultiplier * delta
@@ -138,6 +143,7 @@ func playerMovement(delta):
 	else:
 		velocity.y = 0
 	if Input.is_action_just_pressed(\"ui_up\") and is_on_floor():
+		$JumpSfx.play()
 		velocity.y = -jumpForce
 	input = getInput()
 	if input.x == 0:
@@ -149,11 +155,11 @@ func playerMovement(delta):
 		velocity.x += input.x * accel * delta
 		velocity.x = clamp(velocity.x, -maxSpeed, maxSpeed)
 		sprite.flip_h = input.x < 0
-	#if is_on_floor():
-		#if abs(velocity.x) > 5:
-			#sprite.play(\"walk\")
-		#else:
-			#sprite.play(\"idle\")
+	if is_on_floor():
+		if abs(velocity.x) > 5:
+			sprite.play(\"walk\")
+		else:
+			sprite.play(\"idle\")
 	#else:
 		#sprite.play(\"jump\")
 "
@@ -173,14 +179,19 @@ script/source = "extends Camera2D
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
-	var level_root = get_parent().get_parent()  # Assuming Player is under MainLevel
+	var level_root = get_parent().get_parent()
 	var rightEdge = level_root.get_node(\"RightEdge\")
-	limit_right = rightEdge.global_position.x
-
-
-# Called every frame. 'delta' is the elapsed time since the previous frame.
-func _process(delta: float) -> void:
-	pass
+	var leftEdge = level_root.get_node(\"LeftEdge\")
+	var bottomEdge = level_root.get_node(\"BottomEdge\")
+	var topEdge = level_root.get_node(\"TopEdge\")
+	if rightEdge:
+		limit_right = rightEdge.global_position.x
+	if leftEdge:
+		limit_left = leftEdge.global_position.x
+	if bottomEdge:
+		limit_bottom = bottomEdge.global_position.y
+	if topEdge:
+		limit_top = topEdge.global_position.y
 "
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_4hqxf"]
@@ -227,6 +238,22 @@ region = Rect2(1600, 0, 800, 800)
 atlas = ExtResource("2_toe0l")
 region = Rect2(2400, 0, 800, 800)
 
+[sub_resource type="AtlasTexture" id="AtlasTexture_viisw"]
+atlas = ExtResource("3_4hqxf")
+region = Rect2(0, 0, 800, 800)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_gknb5"]
+atlas = ExtResource("3_4hqxf")
+region = Rect2(800, 0, 800, 800)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ka7lq"]
+atlas = ExtResource("3_4hqxf")
+region = Rect2(1600, 0, 800, 800)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_o1guy"]
+atlas = ExtResource("3_4hqxf")
+region = Rect2(2400, 0, 800, 800)
+
 [sub_resource type="SpriteFrames" id="SpriteFrames_viisw"]
 animations = [{
 "frames": [{
@@ -244,6 +271,23 @@ animations = [{
 }],
 "loop": true,
 "name": &"idle",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_viisw")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_gknb5")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_ka7lq")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_o1guy")
+}],
+"loop": true,
+"name": &"walk",
 "speed": 5.0
 }]
 
@@ -298,9 +342,43 @@ texture_filter = 1
 position = Vector2(-1.42109e-14, 1)
 scale = Vector2(0.0275, 0.033125)
 sprite_frames = SubResource("SpriteFrames_viisw")
-animation = &"idle"
+animation = &"walk"
 autoplay = "idle"
-frame_progress = 0.83824
+
+[node name="Labels" type="Control" parent="."]
+visible = false
+custom_minimum_size = Vector2(10, 10)
+layout_direction = 2
+layout_mode = 3
+anchors_preset = 0
+offset_left = -18.0
+offset_top = -34.0
+offset_right = 21.0
+offset_bottom = -19.0
+
+[node name="Label" type="Label" parent="Labels"]
+texture_filter = 1
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -10.0
+offset_top = -11.5
+offset_right = 10.0
+offset_bottom = 11.5
+grow_horizontal = 2
+grow_vertical = 2
+text = "[E]"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="FmodBankLoader" type="FmodBankLoader" parent="."]
+bank_paths = ["res://fmodBanks/Sfx.bank"]
+
+[node name="JumpSfx" type="FmodEventEmitter3D" parent="."]
+event_guid = "{c5584d60-8f4a-4ba5-b97c-2ea85121f533}"
 
 [connection signal="tree_entered" from="." to="." method="_on_tree_entered"]
 [connection signal="tree_exiting" from="." to="." method="_on_tree_exiting"]

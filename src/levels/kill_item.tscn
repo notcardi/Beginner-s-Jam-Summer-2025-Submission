@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3 uid="uid://dfk0gqqkccoqh"]
+
+[ext_resource type="Script" uid="uid://bp2mxyp3xm0q0" path="res://kill_item.gd" id="1_e51qi"]
+
+[node name="KillItem" type="Area2D"]
+script = ExtResource("1_e51qi")
+
+[connection signal="body_entered" from="." to="." method="_on_body_entered"]
